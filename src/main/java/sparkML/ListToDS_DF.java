@@ -14,13 +14,13 @@ import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 
-public class Test {
+public class ListToDS_DF {
 	public static void main(String args[]){
 		SparkSession session = SparkSession.builder().master("local[*]").appName("Test").getOrCreate();
 		
 		 List<Row>data = Arrays.asList(
-				 RowFactory.create(Vectors.dense(1,2,3,4,5)),
-				 RowFactory.create(Vectors.dense(5,4,3,2,1))
+				 RowFactory.create(Vectors.dense(1,2,3)),
+				 RowFactory.create(Vectors.dense(5,4,3,2))
 				 );
 		 
 		 StructType schema = new StructType(new StructField[]{

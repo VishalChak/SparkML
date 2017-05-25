@@ -21,22 +21,24 @@ import org.apache.spark.sql.types.StructType;
 
 public class JavaPCAExample {
   public static void main(String[] args) {
+	  System.setProperty("hadoop.home.dir", "D:/Vishal/hadoopWinUtill/bin");
     SparkSession spark = SparkSession.builder().master("local").appName("JavaPCAExample").getOrCreate();
 
-    List<Row> data = Arrays.asList(
-      RowFactory.create(Vectors.sparse(5, new int[]{1, 3}, new double[]{1.0, 7.0})),
-      RowFactory.create(Vectors.dense(2.0, 0.0, 3.0, 4.0, 5.0)),
-      RowFactory.create(Vectors.dense(4.0, 0.0, 0.0, 6.0, 7.0))
-    );
-    
+//    List<Row> data = Arrays.asList(
+//      RowFactory.create(Vectors.sparse(5, new int[]{1, 3}, new double[]{1.0, 7.0})),
+//      RowFactory.create(Vectors.dense(2.0, 0.0, 3.0, 4.0, 5.0)),
+//      RowFactory.create(Vectors.dense(4.0, 0.0, 0.0, 6.0, 7.0))
+//    );
+//    
     StructType schema = new StructType(new StructField[]{
       new StructField("features", new VectorUDT(), false, Metadata.empty()),
     });
-    String titanic_ph = "D:/Vishal/Kaggle_Competition/Titanic/test.csv";
-//    Dataset<Row> df = spark.read().json("examples/src/main/resources/people.json");
-//      Dataset<Row> df = spark.read().json(titanic_ph);
-      Dataset<Row> df = spark.createDataFrame(data, schema);
-
+	  String titanic_ph = "D:/Vishal/Kaggle_Competition/Titanic/test.csv";
+//	  Dataset<Row> df = spark.read().json("examples/src/main/resources/people.json");
+	  Dataset<Row> df = spark.read().json(titanic_ph);
+	  df.show();
+//	  Dataset<Row> df = spark.createDataFrame(data, schema);
+/*
     PCAModel pca = new PCA()
       .setInputCol("features")
       .setOutputCol("pcaFeatures")
@@ -44,7 +46,7 @@ public class JavaPCAExample {
       .fit(df);
 
     Dataset<Row> result = pca.transform(df).select("pcaFeatures");
-//    result.show();
+    result.show();*/
     spark.stop();
   }
 }
