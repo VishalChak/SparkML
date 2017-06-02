@@ -26,6 +26,7 @@ public class FileToLableRdd {
 				return lp;
 			}
 		});
+		System.out.println(lpRdd.count());
 		session.stop();
 	}
 	

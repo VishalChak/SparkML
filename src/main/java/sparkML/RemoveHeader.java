@@ -24,6 +24,5 @@ public class RemoveHeader {
 		});
 		System.out.println(javaRDD.count());
 		System.out.println(rdd.count());
-		
 	}
 }
