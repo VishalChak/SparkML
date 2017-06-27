@@ -1,4 +1,4 @@
-package sparkML;
+package Utility;
 
 public class Schema {
 //	StructType schema = DataTypes.createStructType(new StructField[]{

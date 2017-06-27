@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 // scalastyle:off println
-package sparkMlLib.ClsReg;
+package Classification;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
