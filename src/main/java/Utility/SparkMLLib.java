@@ -3,6 +3,7 @@ package Utility;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 import org.apache.commons.beanutils.ConvertUtils;
@@ -17,6 +18,7 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.types.DataType;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StructField;
@@ -50,35 +52,12 @@ public class SparkMLLib {
 
 	private static List<String> dataTypeList = Arrays.asList("DoubleType", "IntegerType", "LongType", "FloatType",
 			"ShortType");
+	
+	
+	
+	
 
-	public static void main(String[] args) {
-		SparkSession session = SparkSession.builder().master("local").getOrCreate();
-		System.setProperty("hadoop.home.dir", "D:/Vishal/hadoopWinUtill/");
-		String path = "D:/Vishal/Kaggle/Titanic/test.csv";
-		Dataset<Row> dataset = session.read().option("header", true).csv(path);
-		dataset.printSchema();
-		JavaRDD<Row> javaRDD = dataset.toJavaRDD();
-		Dataset<Row> dataset2 = session.createDataFrame(javaRDD, stringSchema(javaRDD.first().size()));
-//		dataset2.show();
-		JavaRDD<Row> javaRDD2 = dataset.toJavaRDD();
-		javaRDD2 = javaRDD2.map(new Function<Row, Row>() {
-			
-			public Row call(Row arg0) throws Exception {
-				double arr [] = new double[arg0.size()];
-				for(int i=0;i<arr.length;i++){
-					arr[i] = Double.parseDouble(arg0.get(i).toString());
-				}
-				return RowFactory.create(Vectors.dense(arr));
-			}
-		});
-		
-		dataset = session.createDataFrame(javaRDD2, doubleSchema(dataset.first().size()));
-		
-		dataset.printSchema();
-		session.stop();
-
-	}
-
+	
 	public static StructType stringSchema(int size) {
 		StructField [] structFields =  new StructField[size];
 		for(int i=0; i<structFields.length;i++){
@@ -125,7 +104,7 @@ public class SparkMLLib {
 		return session.createDataFrame(rdd, getLabeledPointSchema());
 	}
 
-	public static Dataset<Row> createLabledPointDataSet(Dataset<Row> dataset, String targetCol,
+	public static Dataset<Row> createLabledPointDataSet1(Dataset<Row> dataset, String targetCol,
 			ArrayList<String> featureColumns) {
 		final int labeledIndex = getColumnIndex(dataset.schema(), targetCol);
 		final int len = featureColumns.size();
@@ -151,6 +130,35 @@ public class SparkMLLib {
 		});
 		return session.createDataFrame(rdd, getLabeledPointSchema());
 	}
+	
+	public static Dataset<Row> createLabledPointDataSet(Dataset<Row> dataset, String targetCol,
+			 ArrayList<String> featureColumns) {
+		
+		ArrayList columnsList = new ArrayList(Arrays.asList(dataset.columns()));
+		final ArrayList<Integer> featureIntList = new ArrayList<Integer>(); 
+		for(int i = 0 ; i < featureColumns.size(); i++){
+			featureIntList.add(columnsList.indexOf(featureColumns.get(i)));
+		}
+		
+		final int labeledIndex = columnsList.indexOf(targetCol);
+		
+		JavaRDD<Row> rdd = dataset.toJavaRDD().map(new Function<Row, Row>() {
+			private static final long serialVersionUID = 1L;
+
+			public Row call(Row arg0) throws Exception {
+				String[] arr = new String[featureIntList.size()];
+				for(int i = 0 ; i < featureIntList.size();i++){
+					arr[i] = arg0.get(featureIntList.get(i))+"";
+				}
+				double lable = (Double) ConvertUtils.convert(arg0.get(labeledIndex)+"", Double.TYPE);
+				double[] doubleValues = (double[]) ConvertUtils.convert(arr, Double.TYPE);
+				return RowFactory.create(lable, Vectors.dense(doubleValues));
+				
+			}
+		});
+		return session.createDataFrame(rdd, getLabeledPointSchema());
+	}
+	
 
 	public static int getColumnIndex(StructType schema, String columnName) {
 		String[] fieldNames = schema.fieldNames();
@@ -340,23 +348,83 @@ public class SparkMLLib {
 		return pairRdd;
 	}
 
-	private static StructType getLabeledPointSchema() {
+	public static StructType getLabeledPointSchema() {
 		StructType schema = new StructType(
 				new StructField[] { new StructField("label", DataTypes.DoubleType, false, Metadata.empty()),
 						new StructField("features", new VectorUDT(), false, Metadata.empty()) });
 		return schema;
 	}
+	
+	public static HashMap<String, ArrayList<String>> divideSchema(StructType schema) {
+		
+		Iterator<StructField> iterator = schema.iterator();
+		ArrayList<String> numColumns = new ArrayList<String>();
+		ArrayList<String> otherColumns = new ArrayList<String>();
+		
+		ArrayList<DataType> numericDatatypes = new ArrayList<DataType>();
+		numericDatatypes.add(DataTypes.DoubleType);
+		numericDatatypes.add(DataTypes.FloatType);
+		numericDatatypes.add(DataTypes.IntegerType);
+		numericDatatypes.add(DataTypes.LongType);
+		numericDatatypes.add(DataTypes.ShortType);
+		
+		while (iterator.hasNext()){
+			StructField field = iterator.next();
+			if (numericDatatypes.contains(field.dataType())){
+				numColumns.add(field.name());
+			} else {
+				otherColumns.add(field.name());
+			}
+		}
+		HashMap<String, ArrayList<String>> map = new HashMap<String, ArrayList<String>>();
+		map.put("numColumns", numColumns);
+		map.put("otherColumns", otherColumns);
+		return map ;
+	}
+	
+	
+	public static void main(String[] args) {
+		SparkSession  session = SparkSession.builder().appName("DT").master("local").getOrCreate();
+		
+		setSession(session);
+		
+		String path  = "D:\\Vishal\\DataSets\\dataset_diabetes\\diabetic_data.csv";
+		Dataset<Row> dataset = session.read().option("inferschema", true).option("header", true).csv(path);
+		
+		HashMap<String, ArrayList<String>> hashMap = divideSchema(dataset.schema());
+		
+		String[] columns = dataset.columns();
+		ArrayList columnsList = new ArrayList(Arrays.asList(columns));
+		
+		ArrayList<String> featureList = new ArrayList<String>();
+		featureList.add("admission_source_id");
+		featureList.add("time_in_hospital");
+		featureList.add("num_lab_procedures");
+		featureList.add("num_procedures");
+		featureList.add("num_medications");
+		String lebel = "encounter_id";
+		
+		Dataset<Row> dataset2 = createLabledPointDataSet(dataset, lebel, featureList);
+		System.out.println(dataset.first());
+		System.out.println(dataset2.first());
+		dataset2.show();
+		session.stop();
+		
+	}
+
+	
+	
 
 }
 
-class GetNewKey implements Serializable {
+class GetNewKey1 implements Serializable {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 	long key;
 
-	public GetNewKey() {
+	public GetNewKey1() {
 		key = 0;
 	}
 
