@@ -16,8 +16,6 @@ import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.ml.linalg.Vector;
 import org.apache.spark.ml.linalg.VectorUDT;
 import org.apache.spark.ml.linalg.Vectors;
-import org.apache.spark.mllib.stat.MultivariateStatisticalSummary;
-import org.apache.spark.mllib.stat.Statistics;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
@@ -29,7 +27,6 @@ import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 import scala.Tuple2;
 import scala.collection.Iterator;
@@ -59,51 +56,7 @@ public class SparkMLUtility {
 
 
 	private static List<String> dataTypeList = Arrays.asList("DoubleType", "IntegerType", "LongType", "FloatType", "ShortType");
-	public static void main(String[] args) {
-		SparkSession session = SparkSession.builder().master("local").getOrCreate();
-		setSession(session);
-		System.setProperty("hadoop.home.dir", "D:/Vishal/hadoopWinUtill/");
-		String path = "D:/Vishal/Kaggle/Titanic/test.csv";
-		Dataset<Row> dataset = session.read().csv(path);
-		MultivariateStatisticalSummary multivariateStatisticalSummary =  Statistics.colStats(SparkMLUtility.getVectorMlLibRdd(dataset.toJavaRDD()).rdd());
-		System.out.println(multivariateStatisticalSummary);
-//		JavaRDD<Row> javaRDD = dataset.toJavaRDD();
-//		JavaRDD<Row> rdd = cbind(javaRDD, javaRDD);
-		session.stop();
-		
-	}
-
-	public static Dataset<Row> createLabledPointDataSet(Dataset<Row> dataset, String targetCol,
-			List<String> featureColumns) {
-		final int labeledIndex = getColumnIndex(dataset.schema(), targetCol);
-		final int len = featureColumns.size();
-		JavaRDD<Row> rdd = dataset.toJavaRDD().map(new Function<Row, Row>() {
-			public Row call(Row arg0) {
-				int j = 0;
-				double lable = 0.0;
-				double[] arr = new double[len];
-				try {
-					
-					for (int i = 0; i < arg0.length(); i++) {
-						double val = 0.0;
-						if (null != arg0.get(i)) {
-							val = Double.parseDouble(arg0.get(i).toString());
-						}
-						if (i == labeledIndex) {
-							lable = val;
-						} else {
-							arr[j++] = val;
-						}
-					}
-
-				} catch (Exception e) {
-					logger_.error("");
-				}
-				return RowFactory.create(lable, Vectors.dense(arr));
-			}
-		});
-		return session.createDataFrame(rdd, getLabeledPointSchema());
-	}
+	
 	
 	public static int getColumnIndex(StructType schema, String columnName) {
 		String[] fieldNames = schema.fieldNames();
@@ -119,7 +72,7 @@ public class SparkMLUtility {
 	public static ArrayList<String> getFeatureList(StructType schema) {
 		String[] fieldNames = schema.fieldNames();
 		
-		ArrayList<String> featureList = new ArrayList();
+		ArrayList<String> featureList = new ArrayList<String>();
 		for(int i = 0 ;i <fieldNames.length;i++){
 			featureList.add(fieldNames[i]);
 		}
@@ -133,17 +86,15 @@ public class SparkMLUtility {
 			private static final long serialVersionUID = 1L;
 
 			public Vector call(Row row) throws Exception {
-				double doubleValues[] = new double [row.length()];
+				String arr[] = new String [row.length()];
 				for (int i = 0; i < row.length(); i++) {
-					doubleValues[i] = Double.parseDouble(row.get(i).toString());
+					arr [i] =  row.get(i)+"";
 				}
+				double[] doubleValues = (double[]) ConvertUtils.convert(arr, Double.TYPE);
 				return Vectors.dense(doubleValues);
 			}
 		});
 	}
-	
-	
-	
 	
 	
 	public static JavaRDD<org.apache.spark.mllib.linalg.Vector> getVectorMlLibRdd(JavaRDD<Row> rdd){
@@ -152,10 +103,11 @@ public class SparkMLUtility {
 			private static final long serialVersionUID = 1L;
 
 			public org.apache.spark.mllib.linalg.Vector call(Row row) throws Exception {
-				double doubleValues[] = new double [row.length()];
+				String arr[] = new String [row.length()];
 				for (int i = 0; i < row.length(); i++) {
-					doubleValues[i] = Double.parseDouble(row.get(i).toString());
+					arr [i] =  row.get(i)+"";
 				}
+				double[] doubleValues = (double[]) ConvertUtils.convert(arr, Double.TYPE);
 				return org.apache.spark.mllib.linalg.Vectors.dense(doubleValues);
 			}
 		});
@@ -163,7 +115,7 @@ public class SparkMLUtility {
 	
 	public static List<String> getUpperCaseList(List<String> list) {
 		java.util.Iterator<String> iterator = list.iterator();
-		List< String> upperList = new ArrayList();
+		List< String> upperList = new ArrayList<String>();
 		while(iterator.hasNext()){
 			upperList.add(iterator.next().toUpperCase());
 		}
@@ -175,7 +127,7 @@ public class SparkMLUtility {
 		Iterator<StructField> iterator = structType.iterator();
 		while (iterator.hasNext()) {
 			StructField structField = iterator.next();
-			if (!dataTypeList.contains(structField.dataType().toString())) {
+			if (!dataTypeList.contains(structField.dataType()+"")) {
 				dataset = dataset.drop(structField.name());
 			}
 		}
@@ -226,9 +178,19 @@ public class SparkMLUtility {
 	}
 
 	public static Dataset<Row> getVectorDataSet(Dataset<Row> dataset) {
-		Dataset<Row> datasetVector = session
-				.createDataFrame(getVectorRowRdd(dataset.toJavaRDD()), getVectorSchema());
-		return datasetVector;
+		JavaRDD<Row> rdd = dataset.javaRDD().map(new Function<Row, Row>() {
+
+			public Row call(Row arg0) throws Exception {
+				String[] arr = new String[arg0.size()];
+				for(int i=0;i<arg0.size();i++){
+					arr[i] = arg0.get(i)+"";
+				}
+				double[] doubleValues = (double[]) ConvertUtils.convert(arr, Double.TYPE);
+				return RowFactory.create(Vectors.dense(doubleValues));
+			}
+		});
+		return session.createDataFrame(rdd, getVectorSchema());
+		
 	}
 
 	private static StructType getVectorSchema() {
@@ -269,9 +231,9 @@ public class SparkMLUtility {
 		String str = "";
 		for (int i = 0; i < len; i++) {
 			if (i != len - 1) {
-				str += cleanString(row.get(i).toString()) + ",";
+				str += cleanString(row.get(i)+"") + ",";
 			} else {
-				str += cleanString(row.get(i).toString());
+				str += cleanString(row.get(i)+"");
 			}
 		}
 		return str;
@@ -308,15 +270,17 @@ public class SparkMLUtility {
 	
 	
 	public static Dataset<Row> createLabledPointDataSet(Dataset<Row> dataset, String targetCol,
-			 ArrayList<String> featureColumns) {
+			 List<String> featureColumns) {
 		
 		ArrayList<String> columnsList = new ArrayList<String>(Arrays.asList(dataset.columns()));
 		final ArrayList<Integer> featureIntList = new ArrayList<Integer>(); 
-		for(int i = 0 ; i < featureColumns.size(); i++){
-			featureIntList.add(columnsList.indexOf(featureColumns.get(i)));
+		for(int i=0;i<columnsList.size();i++){
+			columnsList.set(i, columnsList.get(i).trim().toLowerCase());
 		}
-		
-		final int labeledIndex = columnsList.indexOf(targetCol);
+		for(int i = 0 ; i < featureColumns.size(); i++){
+			featureIntList.add(columnsList.indexOf(featureColumns.get(i).trim().toLowerCase()));
+		}
+		final int labeledIndex = columnsList.indexOf(targetCol.toLowerCase());
 		
 		JavaRDD<Row> rdd = dataset.toJavaRDD().map(new Function<Row, Row>() {
 			private static final long serialVersionUID = 1L;
@@ -324,7 +288,8 @@ public class SparkMLUtility {
 			public Row call(Row arg0) throws Exception {
 				String[] arr = new String[featureIntList.size()];
 				for(int i = 0 ; i < featureIntList.size();i++){
-					arr[i] = arg0.get(featureIntList.get(i))+"";
+					String atr = arg0.get(featureIntList.get(i))+"";
+					arr[i] = atr;
 				}
 				double lable = (Double) ConvertUtils.convert(arg0.get(labeledIndex)+"", Double.TYPE);
 				double[] doubleValues = (double[]) ConvertUtils.convert(arr, Double.TYPE);
@@ -334,6 +299,7 @@ public class SparkMLUtility {
 		});
 		return session.createDataFrame(rdd, getLabeledPointSchema());
 	}
+
 	
 	
 	public static HashMap<String, ArrayList<String>> divideSchema(StructType schema) {
