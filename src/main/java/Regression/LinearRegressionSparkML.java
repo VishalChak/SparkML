@@ -3,6 +3,7 @@ package Regression;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator;
 import org.apache.spark.ml.regression.LinearRegression;
 import org.apache.spark.ml.regression.LinearRegressionModel;
 import org.apache.spark.ml.regression.LinearRegressionTrainingSummary;
@@ -30,21 +31,35 @@ public class LinearRegressionSparkML {
 		Dataset<Row>numDataSet = SparkMLUtility.selectColumns(dataset, numColumns);
 		String lable = numColumns.get(numColumns.size()-1);
 		numColumns.remove(numColumns.size()-1);
+		
 		Dataset<Row> pointDataSet = SparkMLUtility.createLabledPointDataSet(numDataSet, lable, numColumns);
 		pointDataSet.show();
 		
-		LinearRegression lr = new LinearRegression() .setMaxIter(10)
+		LinearRegression lr = new LinearRegression().setLabelCol("label").setFeaturesCol("features").setMaxIter(10)
 				  .setRegParam(0.3)
 				  .setElasticNetParam(0.8);
 		
 		LinearRegressionModel lrModel = lr.fit(pointDataSet);
-		try {
+		
+		
+		/*try {
 			System.out.println(getSummaryOfModel(lrModel));
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		}*/
 		
+		Dataset<Row> predictions = lrModel.transform(pointDataSet);
+//		predictions.show();
+		
+		
+		MulticlassClassificationEvaluator evaluator = new MulticlassClassificationEvaluator()
+				  .setLabelCol("label")
+				  .setPredictionCol("prediction");
+				
+		
+		Double accuracy = evaluator.evaluate(predictions);
+		System.out.println(accuracy);
 		
 		
 		session.stop();

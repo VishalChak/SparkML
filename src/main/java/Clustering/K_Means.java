@@ -36,32 +36,6 @@ public class K_Means {
 		Double computeCost = model.computeCost(pointDataSet);
 		
 		System.out.println("Within Set Sum of Squared Errors : "+computeCost);
-/*//		System.out.println(computeCost);
-		
-		String explainParams = model.explainParams();
-//		System.out.println(explainParams);
-		
-		KMeansSummary summary = model.summary();
-		
-		Vector[] clusterCenters = model.clusterCenters();
-		long[] clusterSizes = summary.clusterSizes();
-		
-		JSONObject obj = new JSONObject();
-		for(int i= 0 ;i<clusterSizes.length;i++){
-			obj.put("Cluster "+(i+1), " Size : "+ clusterSizes[i] +" Cluster center : "+clusterCenters[i]);
-		}
-		
-		System.out.println(obj.toJSONString());
-		
-		
-		
-*/		
-		try {
-			System.out.println(getSummaryOfModel(model));
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		
 		session.stop();
 		

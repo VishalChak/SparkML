@@ -5,6 +5,7 @@ import java.util.HashMap;
 
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.mllib.linalg.Vector;
+import org.apache.spark.mllib.stat.MultivariateStatisticalSummary;
 import org.apache.spark.mllib.stat.Statistics;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
@@ -18,17 +19,35 @@ public class StatisticalSummary {
 		Dataset<Row> dataset = session.read().option("HeaDer", true).option("inferschema", true).csv(path);
 		
 		
-		SparkMLUtility.setSession(session);
-		HashMap<String, ArrayList<String>> map = SparkMLUtility.divideSchema(dataset.schema());
+//		Given function describe summary for all numeric columns....   
+		dataset.describe().show();
 		
-		ArrayList<String> numColumns = map.get("numColumns");
+		String[] columns = dataset.describe().columns();
+		for(int  i = 0 ; i<columns.length;i++){
+			System.out.println(columns[i]);
+		}
 		
-		Dataset<Row>numDataSet = SparkMLUtility.selectColumns(dataset, numColumns);
-		JavaRDD<Vector> vectorMlLibRdd = SparkMLUtility.getVectorMlLibRdd(numDataSet.toJavaRDD());
+		
+//		describe only specific variable 
+		dataset.describe("patient_nbr","admission_type_id").show();
+		
+//		Covariance B/W to variable
+//		Covariance is a measure of how two variables change with respect to each other
+		
+		double corr = dataset.stat().corr("num_lab_procedures", "num_procedures");
+		System.out.println(corr);
+		
+//		Cross Tabulation provides a table of the frequency distribution for a set of variables. 
+		dataset.stat().crosstab("num_lab_procedures", "num_procedures").show();
 		
 		
-//		Statistics.colStats(numDataSet.toJavaRDD());
 		
+
+		
+		session.stop();
+		
+		
+	
 		
 	}
 	

@@ -260,7 +260,7 @@ public class SparkMLUtility {
 		return pairRdd;
 	}
 	
-	private static StructType getLabeledPointSchema() {
+	private static StructType labeledPointSchema() {
 		StructType schema = new StructType(new StructField[]{
 			    new StructField("label", DataTypes.DoubleType, false, Metadata.empty()),
 			    new StructField("features", new VectorUDT(), false, Metadata.empty())
@@ -297,11 +297,9 @@ public class SparkMLUtility {
 				
 			}
 		});
-		return session.createDataFrame(rdd, getLabeledPointSchema());
+		return session.createDataFrame(rdd, labeledPointSchema());
 	}
 
-	
-	
 	public static HashMap<String, ArrayList<String>> divideSchema(StructType schema) {
 			
 			Iterator<StructField> iterator = schema.iterator();
