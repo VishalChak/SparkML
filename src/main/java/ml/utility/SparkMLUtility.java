@@ -1,18 +1,20 @@
 package ml.utility;
 
 
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.beanutils.ConvertUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.PairFunction;
+import org.apache.spark.ml.linalg.DenseVector;
 import org.apache.spark.ml.linalg.Vector;
 import org.apache.spark.ml.linalg.VectorUDT;
 import org.apache.spark.ml.linalg.Vectors;
@@ -35,10 +37,9 @@ import scala.collection.Iterator;
  * Added by Vishal Babu
  */
 
+
 public class SparkMLUtility {
-	private static final Logger logger_ = LoggerFactory.getLogger(SparkMLUtility.class);
 	
-	private static SparkSession session;
 	
 	/**
 	 * @return the session
@@ -54,15 +55,17 @@ public class SparkMLUtility {
 		SparkMLUtility.session = session;
 	}
 
-
-	private static List<String> dataTypeList = Arrays.asList("DoubleType", "IntegerType", "LongType", "FloatType", "ShortType");
+	private static final Logger logger_ = LoggerFactory.getLogger(SparkMLUtility.class);
 	
+	private static SparkSession session;
+	
+	private static List<String> dataTypeList = Arrays.asList("DoubleType", "IntegerType", "LongType", "FloatType", "ShortType");
 	
 	public static int getColumnIndex(StructType schema, String columnName) {
 		String[] fieldNames = schema.fieldNames();
 		for(int i = 0 ;i <fieldNames.length;i++){
 			if (fieldNames[i].equalsIgnoreCase(columnName)){
-				return i;
+			return i;
 			}
 		}
 		return fieldNames.length-1;
@@ -72,7 +75,7 @@ public class SparkMLUtility {
 	public static ArrayList<String> getFeatureList(StructType schema) {
 		String[] fieldNames = schema.fieldNames();
 		
-		ArrayList<String> featureList = new ArrayList<String>();
+		ArrayList<String> featureList = new ArrayList<>();
 		for(int i = 0 ;i <fieldNames.length;i++){
 			featureList.add(fieldNames[i]);
 		}
@@ -115,7 +118,7 @@ public class SparkMLUtility {
 	
 	public static List<String> getUpperCaseList(List<String> list) {
 		java.util.Iterator<String> iterator = list.iterator();
-		List< String> upperList = new ArrayList<String>();
+		List< String> upperList = new ArrayList<>();
 		while(iterator.hasNext()){
 			upperList.add(iterator.next().toUpperCase());
 		}
@@ -134,11 +137,27 @@ public class SparkMLUtility {
 		return dataset;
 	}
 	
-	
-	public static StructType vectorSchema(){
-		return new StructType(
-				new StructField[] { new StructField("features", new VectorUDT(), false, Metadata.empty()), });
+	public static Dataset<Row> cBindDataset(Dataset<Row> dataset1, Dataset<Row> dataset2) {
+		String[] columns1 = dataset1.columns();
+		String[] columns2 = dataset2.columns();
+		String str = "";
 		
+		for (int i =0 ;i<columns1.length;i++){
+			if (i!=columns1.length-1){
+				str+="a1."+columns1[i]+",";
+			} else {
+				str+="a1."+columns1[i];
+			}
+		}
+		
+		for (int i =0 ;i<columns2.length;i++){
+			str+=",a2."+columns2[i];
+		}
+		System.out.println(str);
+		dataset1.createOrReplaceTempView("table1");
+		dataset2.createOrReplaceTempView("table2");
+		Dataset<Row> sql = session.sqlContext().sql("select "+str+" from (SELECT a.*,row_number() over (partition by 1 order by 1) as key1 FROM table1 a) a1 left outer join (SELECT b.*,row_number() over (partition by 1 order by 1) as key2 FROM table2 b) a2 on a1.key1=a2.key2");
+		return sql;
 	}
 	
 	public static Dataset<Row> selectColumns(Dataset<Row> dataset, List<String> colList) {
@@ -178,8 +197,10 @@ public class SparkMLUtility {
 	}
 
 	public static Dataset<Row> getVectorDataSet(Dataset<Row> dataset) {
+		@SuppressWarnings("serial")
 		JavaRDD<Row> rdd = dataset.javaRDD().map(new Function<Row, Row>() {
 
+			@Override
 			public Row call(Row arg0) throws Exception {
 				String[] arr = new String[arg0.size()];
 				for(int i=0;i<arg0.size();i++){
@@ -189,11 +210,11 @@ public class SparkMLUtility {
 				return RowFactory.create(Vectors.dense(doubleValues));
 			}
 		});
-		return session.createDataFrame(rdd, getVectorSchema());
+		return session.createDataFrame(rdd, schemaVector());
 		
 	}
 
-	private static StructType getVectorSchema() {
+	public static StructType schemaVector() {
 		StructType schema = new StructType(
 				new StructField[] { new StructField("features", new VectorUDT(), false, Metadata.empty()), });
 		return schema;
@@ -260,7 +281,7 @@ public class SparkMLUtility {
 		return pairRdd;
 	}
 	
-	private static StructType labeledPointSchema() {
+	private static StructType schemaLabeledPoint() {
 		StructType schema = new StructType(new StructField[]{
 			    new StructField("label", DataTypes.DoubleType, false, Metadata.empty()),
 			    new StructField("features", new VectorUDT(), false, Metadata.empty())
@@ -297,9 +318,11 @@ public class SparkMLUtility {
 				
 			}
 		});
-		return session.createDataFrame(rdd, labeledPointSchema());
+		return session.createDataFrame(rdd, schemaLabeledPoint());
 	}
 
+	
+	
 	public static HashMap<String, ArrayList<String>> divideSchema(StructType schema) {
 			
 			Iterator<StructField> iterator = schema.iterator();
@@ -326,6 +349,135 @@ public class SparkMLUtility {
 			map.put("otherColumns", otherColumns);
 			return map ;
 		}
+	
+	public static HashMap<String, String> getColumnDetails(Dataset<Row> dataset, ArrayList<String> listOfColumns) {
+		dataset.show();
+		HashMap<String, String> columnDetails = new HashMap<String, String>();
+		StructType structType = dataset.schema();
+		StructField[] structField = structType.fields();
+		if (null != listOfColumns) {
+			for (String columnName : listOfColumns) {
+				for (StructField field : structField) {
+					if ((field.name()).equalsIgnoreCase(columnName)) {
+						columnDetails.put(columnName, StringUtils.remove(field.dataType().toString(), "Type").toUpperCase());
+					}
+				}
+			}
+		}
+		return columnDetails;
+	}
+	
+	private static StructType schemaDouble(int len , Object featureCols, String tagetCol) {
+		StructField fields [ ] = new StructField[len];
+		boolean notNull = false, isMap = false;
+		Map<String, DataType> featureDataTypeMap = null;
+		Object[] keyArr = null;
+		ArrayList<String> featureList = null;
+		
+		if (null != featureCols && featureCols instanceof Map<?,?>){
+			HashMap<String, String>featureMap= (HashMap<String, String>) featureCols;
+			featureDataTypeMap = new  HashMap<>();
+			keyArr = featureMap.keySet().toArray();
+			for(String key: featureMap.keySet()){
+				featureDataTypeMap.put(key, getDataTypeFromSStr(featureMap.get(key)));
+			}
+			isMap = true;
+			notNull = true;
+		} else if (null != featureCols){
+			featureList  = (ArrayList<String>) featureCols;
+			notNull = true;
+		}
+		
+		
+		for(int i = 0 ; i < len; i ++){
+			if ( i== 0 ){
+				if (tagetCol!=""){
+					fields[i]= new StructField(tagetCol, DataTypes.DoubleType, false, Metadata.empty());
+				}
+				else{
+					fields[i]= new StructField("Feature"+i, DataTypes.DoubleType, false, Metadata.empty());
+				}
+			} else {
+				if (notNull && isMap){
+					fields[i]= new StructField(keyArr[i-1]+"", featureDataTypeMap.get(keyArr[i-1]), false, Metadata.empty());
+				} else if(notNull && !isMap){
+					fields[i]= new StructField(featureList.get(i-1), DataTypes.DoubleType, false, Metadata.empty());
+				} else {
+					fields[i]= new StructField("Feature"+i, DataTypes.DoubleType, false, Metadata.empty());
+				}
+			}
+			
+			
+		}
+		StructType schema = new StructType(fields);
+		
+		System.out.println(schema.size());
+		return schema;
+	}
+	
+	
+	private static DataType getDataTypeFromSStr(String dataType) {
+		
+		if (null != dataType){
+			dataType = dataType.trim();
+		}
+		
+		if(dataType.equalsIgnoreCase("integer")){
+			return DataTypes.IntegerType;
+		} else if (dataType.equalsIgnoreCase("long")){
+			return DataTypes.LongType;
+		} else if (dataType.equalsIgnoreCase("float")){
+			return DataTypes.FloatType;
+		} else if (dataType.equalsIgnoreCase("short")){
+			return DataTypes.ShortType;
+		} else if (dataType.equalsIgnoreCase("string")){
+			return DataTypes.StringType;
+		} else {
+			return DataTypes.DoubleType;
+		}
+	}
+	
+	@SuppressWarnings("unused")
+	public static Dataset<Row> createRowDSFromLablePointDS(Dataset<Row> dataset, Object featureCols, String targetCol) {
+		
+		StructField[] structFields = dataset.schema().fields();
+		final int featureInx;
+		final int lableInx;
+		StructField structField = structFields[0];
+		if(structField.dataType() != DataTypes.DoubleType){
+			featureInx = 0;
+			lableInx = 1; 
+		} else {
+			featureInx = 1;
+			lableInx = 0; 
+		}
+		
+		@SuppressWarnings("serial")
+		JavaRDD<Row> rdd = dataset.toJavaRDD().map(new Function<Row, Row>() {
+			public Row call(Row arg0) throws Exception {
+				DenseVector denseVector =  (DenseVector) arg0.get(featureInx);
+				double[] values = denseVector.values();
+				Object [] arr = new  Double[values.length+1];
+				arr[0] = (Double) ConvertUtils.convert(arg0.get(lableInx)+"", Double.TYPE);
+				for(int i = 0; i <values.length;i ++){
+					arr[i+1] = values[i];
+				}
+				return RowFactory.create(arr);
+			}
+		});
+		
+		
+		Row first = dataset.first();
+		DenseVector denseVector =  (DenseVector) first.get(featureInx);
+		double[] values = denseVector.values();
+		StructType schemaDouble = schemaDouble(values.length+1,featureCols, targetCol);
+		Dataset<Row> datasetRow = session.createDataFrame(rdd,schemaDouble);
+		return datasetRow;
+	}
+	
+	
+	
+	
 
 }
 
