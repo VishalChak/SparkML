@@ -50,7 +50,6 @@ public class TokenizerSparkML {
 			System.out.println();
 		}
 		
-
 		session.stop();
 
 	}
