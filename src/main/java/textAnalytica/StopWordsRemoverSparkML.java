@@ -34,9 +34,7 @@ public class StopWordsRemoverSparkML {
 		StopWordsRemover remover = new StopWordsRemover().setInputCol("raw").setOutputCol("filtered");
 		remover.loadDefaultStopWords("english");
 		Dataset<Row> datasetFiltered = remover.transform(dataset);
-		
 		datasetFiltered.show();
-		
 		session.stop();
 	}
 }
