@@ -43,7 +43,5 @@ public class N_GramSparkML {
 			  System.out.println();
 		}
 		session.stop();
-		
-
 	}
 }
