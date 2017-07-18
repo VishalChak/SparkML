@@ -1,7 +1,6 @@
 package textAnalytica;
 
 import org.apache.spark.ml.feature.RegexTokenizer;
-import org.apache.spark.ml.feature.Tokenizer;
 import org.apache.spark.ml.feature.VectorAssembler;
 import org.apache.spark.ml.feature.Word2Vec;
 import org.apache.spark.ml.feature.Word2VecModel;
@@ -9,17 +8,18 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 
-import scala.collection.immutable.Map;
-
 public class EndToEnd {
 	public static void main(String[] args) {
 		SparkSession  session = SparkSession.builder().appName("EndTOEnd").master("local").getOrCreate();
 		String path = "D:\\Vishal\\DataSets\\incident_new.csv";
 		Dataset<Row> dataset = session.read().option("header", true).option("inferschema", true).csv(path);
 		
+		dataset = dataset.na().drop();
 		dataset = dataset.na().fill("");
 		
 //		dataset.show();
+		
+		
 		RegexTokenizer regexTokenizer1 = new RegexTokenizer().setInputCol("description").setOutputCol("word1").setPattern("\\W");
 		RegexTokenizer regexTokenizer2 = new RegexTokenizer().setInputCol("requested_for").setOutputCol("word2").setPattern("\\W");
 		
@@ -49,9 +49,7 @@ public class EndToEnd {
 			System.out.println(r.getAs(0));
 		}
 		
-//		transform.show();
-		
-		
+		transform.printSchema();
 		session.stop();
 	}
 
