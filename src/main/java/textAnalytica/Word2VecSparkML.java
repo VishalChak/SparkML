@@ -27,16 +27,12 @@ public class Word2VecSparkML {
 		  new StructField("text", new ArrayType(DataTypes.StringType, true), false, Metadata.empty())
 		});
 		Dataset<Row> documentDF = session.createDataFrame(data, schema);
-//		documentDF.show();
-		
 		Word2Vec word2Vec = new Word2Vec().setInputCol("text").setOutputCol("result").setVectorSize(3).setMinCount(0);
 		Word2VecModel word2VecModel = word2Vec.fit(documentDF);
 		
 		Dataset<Row> datasetRes = word2VecModel.transform(documentDF);
-		
-		for(Row r : datasetRes.select("result").takeAsList(3)){
-			System.out.println(r.get(0));
-		}
+		datasetRes.show();
+		datasetRes.printSchema();;
 		session.stop();
 	}
 }

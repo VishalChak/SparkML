@@ -22,7 +22,9 @@ public class CountVectorizerSparkML {
 		
 		List<Row> data = Arrays.asList(
 				  RowFactory.create(Arrays.asList("a", "b", "c")),
-				  RowFactory.create(Arrays.asList("a", "b", "b", "c", "a"))
+				  RowFactory.create(Arrays.asList("a", "b", "b", "c", "a", "c", "a")),
+				  RowFactory.create(Arrays.asList("a", "b", "b", "c", "a", "c", "a")),
+				  RowFactory.create(Arrays.asList("a", "b", "b", "c", "a", "c", "a"))
 		);
 		StructType schema = new StructType(new StructField [] {
 				  new StructField("text", new ArrayType(DataTypes.StringType, true), false, Metadata.empty())
@@ -32,7 +34,7 @@ public class CountVectorizerSparkML {
 		Dataset<Row> df = session.createDataFrame(data, schema);
 //		df.show();
 		
-		CountVectorizer countVectorizer = new CountVectorizer().setInputCol("text").setOutputCol("feature").setVocabSize(3).setMinDF(2);
+		CountVectorizer countVectorizer = new CountVectorizer().setInputCol("text").setOutputCol("feature").setMinDF(3);
 		CountVectorizerModel countVectorizerModel = countVectorizer.fit(df);
 		Dataset<Row> res_df = countVectorizerModel.transform(df);
 		

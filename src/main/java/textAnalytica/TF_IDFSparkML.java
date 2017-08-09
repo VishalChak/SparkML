@@ -22,8 +22,8 @@ public class TF_IDFSparkML {
 		SparkSession session = SparkSession.builder().appName("TF-IDF").master("local").getOrCreate();
 		
 		List<Row> data = Arrays.asList(
-				  RowFactory.create(0.0, "Hi I heard about Spark"),
-				  RowFactory.create(0.0, "I wish Java could use case classes"),
+				  RowFactory.create(0.0, "Hi I"),
+				  RowFactory.create(0.0, "Hi I Hi I"),
 				  RowFactory.create(1.0, "Logistic regression models are neat")
 				);
 		StructType schema = new StructType(new StructField[]{
@@ -55,14 +55,14 @@ public class TF_IDFSparkML {
 		IDFModel idfModel = idf.fit(datasetTF);
 		
 		Dataset<Row> datasetIdf = idfModel.transform(datasetTF);
-//		datasetIdf.show();
+		datasetIdf.show();
 		
-//		for (Row r : datasetIdf.select("features", "label").takeAsList(3)){
-//			Vector features  = r.getAs(0);
-//			Double label = r.getAs(1);
-//			System.out.println(features);
-//			System.out.println(label);
-//		}
+		for (Row r : datasetIdf.select("features", "label").takeAsList(3)){
+			Vector features  = r.getAs(0);
+			Double label = r.getAs(1);
+			System.out.println(features);
+			System.out.println(label);
+		}
 		
 		session.stop();
 	}
