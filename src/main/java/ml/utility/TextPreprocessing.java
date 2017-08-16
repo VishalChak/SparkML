@@ -1,6 +1,7 @@
 package ml.utility;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.spark.ml.feature.StopWordsRemover;
@@ -18,16 +19,19 @@ public class TextPreprocessing {
 	private static SparkSession session = null;
 	private static Dataset<Row> dataset = null;
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static void main(String[] args) {
 		session = new SparkSession.Builder().appName("preprocessing").master("local").getOrCreate();
 
 		String path = "D:\\Vishal\\DataSets\\incident_Test.csv";
 		dataset = session.read().option("header", "true").option("inferSchema", "true").csv(path);
 
+		List colList = new ArrayList(Arrays.asList(dataset.columns()));
+
 		List<String> list = new ArrayList<String>();
 		list.add("description");
 		list.add("requested_for");
-		
+
 		if (true) {
 			list = toLower(list);
 		}
@@ -37,15 +41,34 @@ public class TextPreprocessing {
 		if (true) {
 			list = stopWordRemover(list);
 		}
-		if (true){
+		if (true) {
 			list = lemmatization(list);
 		}
-		dataset.show();
+		if (true) {
+			list = thesaurus(list);
+		}
+		if (true) {
+			list = stemming(list);
+		}
+		if (true) {
+			list = stripWhiteSpace(list);
+		}
+		colList.addAll(list);
+		dataset = SparkMLUtility.selectColumns(dataset, colList);
 	}
 
 	private static List<String> thesaurus(List<String> list) {
 		return list;
 
+	}
+
+	private static List<String> stemming(List<String> list) {
+		return list;
+
+	}
+
+	private static List<String> stripWhiteSpace(List<String> list) {
+		return list;
 	}
 
 	private static List<String> lemmatization(List<String> list) {
@@ -64,11 +87,13 @@ public class TextPreprocessing {
 			private static final long serialVersionUID = 1L;
 
 			public String call(String str) throws Exception {
-				if (null != str && str.trim() != "") {
-					System.out.println(str);
-					Sentence sentence = new Sentence(str);
-					System.out.println(sentence.lemmas());
-					return str.toLowerCase();
+				if (null != str) {
+					str = str.trim();
+					if (0 != str.length()) {
+						Sentence sentence = new Sentence(str);
+						return String.join(" ", sentence.lemmas());
+					}
+					return str;
 				} else {
 					return "";
 				}
@@ -78,15 +103,6 @@ public class TextPreprocessing {
 		dataset.createOrReplaceTempView("table");
 		dataset = session.sql(sql);
 		return newlist;
-	}
-
-	private static List<String> stemming(List<String> list) {
-		return list;
-
-	}
-
-	private static List<String> stripWhiteSpace(List<String> list) {
-		return list;
 	}
 
 	private static List<String> stopWordRemover(List<String> list) {

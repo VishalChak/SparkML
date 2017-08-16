@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 
 import org.apache.commons.beanutils.ConvertUtils;
@@ -167,15 +168,9 @@ public class SparkMLUtility {
 
 	public static Dataset<Row> selectColumns(Dataset<Row> dataset, List<String> colList) {
 		String columns = "", query;
-		for (int i = 0; i < colList.size(); i++) {
-			if (i != colList.size() - 1) {
-				columns += colList.get(i) + ",";
-			} else {
-				columns += colList.get(i);
-			}
-		}
-		dataset.createOrReplaceTempView("Table");
-		query = "select " + columns + " from Table";
+		columns = String.join(", ", colList);
+		dataset.createOrReplaceTempView("table");
+		query = "select " + columns + " from table";
 		return session.sql(query);
 	}
 
@@ -689,6 +684,13 @@ public class SparkMLUtility {
 		list.add("label");
 		toDouble(list, transform);
 		
+	}
+	
+	public static void toUpper(List<String> featureList) {
+		ListIterator<String> iterator = featureList.listIterator();
+		while (iterator.hasNext()) {
+			iterator.set(iterator.next().toUpperCase());
+		}
 	}
 
 }
