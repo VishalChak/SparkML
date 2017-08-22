@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 
 import org.apache.spark.ml.feature.StopWordsRemover;
 import org.apache.spark.ml.feature.Tokenizer;
@@ -13,7 +14,22 @@ import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.api.java.UDF1;
 import org.apache.spark.sql.types.DataTypes;
 
+import edu.stanford.nlp.ling.CoreAnnotations.LemmaAnnotation;
+import edu.stanford.nlp.ling.CoreAnnotations.NamedEntityTagAnnotation;
+import edu.stanford.nlp.ling.CoreAnnotations.PartOfSpeechAnnotation;
+import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
+import edu.stanford.nlp.ling.CoreAnnotations.TextAnnotation;
+import edu.stanford.nlp.ling.CoreAnnotations.TokensAnnotation;
+import edu.stanford.nlp.ling.CoreLabel;
+import edu.stanford.nlp.pipeline.Annotation;
+import edu.stanford.nlp.pipeline.StanfordCoreNLP;
+import edu.stanford.nlp.semgraph.SemanticGraph;
+import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation;
 import edu.stanford.nlp.simple.Sentence;
+import edu.stanford.nlp.trees.Tree;
+import edu.stanford.nlp.trees.TreeCoreAnnotations.TreeAnnotation;
+import edu.stanford.nlp.util.CoreMap;
+import edu.stanford.nlp.util.TypesafeMap.Key;
 import ml.utility.SparkMLUtility;
 
 public class TextPreprocessing implements Serializable {
@@ -248,7 +264,7 @@ public class TextPreprocessing implements Serializable {
 	}
 
 	public static void main(String[] args) throws Exception {
-		String path = "D:\\Vishal\\DataSets\\incident_Test.csv";
+		/*String path = "D:\\Vishal\\DataSets\\incident_Test.csv";
 		session = SparkSession.builder().master("local").appName("Prepossing").getOrCreate();
 		dataset = session.read().option("header", true).option("infraschema", true).csv(path);
 		dataset.show();
@@ -256,7 +272,40 @@ public class TextPreprocessing implements Serializable {
 		preprocessing.textFeatures = new ArrayList<String>();
 		preprocessing.textFeatures.add("description");
 		preprocessing.textFeatures.add("requested_for");
-		preprocessing.exec();
+		preprocessing.exec();*/
+		
+		
+		Properties props = new Properties();
+//        props.setProperty("annotators", "lemma");
+        props.setProperty("annotators", "tokenize, ssplit, pos, lemma, ner, parse, dcoref");
+        StanfordCoreNLP pipeline = new StanfordCoreNLP(props);
+       
+        String text = "The root problem is that, once you've made the first replacement, you can not work again with the same initially given string.";
+        Annotation document = new Annotation(text);
+        pipeline.annotate(document);
+        List<CoreMap> sentences = document.get(SentencesAnnotation.class);
+        
+       /* for(CoreMap sentence: sentences) {
+        	  // traversing the words in the current sentence
+        	  // a CoreLabel is a CoreMap with additional token-specific methods
+        	  for (CoreLabel token: sentence.get(TokensAnnotation.class)) {
+        	    // this is the text of the token
+        	    String word = token.get(TextAnnotation.class);
+//        	    System.out.println(word);
+        	    // this is the POS tag of the token
+        	    String pos = token.get(PartOfSpeechAnnotation.class);
+        	    // this is the NER label of the token
+        	    String ne = token.get(NamedEntityTagAnnotation.class);
+        	    System.out.println(token.get(LemmaAnnotation.class));
+        	  }
+
+        	  // this is the parse tree of the current sentence
+        	  Tree tree = sentence.get(TreeAnnotation.class);
+
+        	  // this is the Stanford dependency graph of the current sentence
+        	  SemanticGraph dependencies = sentence.get(CollapsedCCProcessedDependenciesAnnotation.class);
+        	}*/
+		
 	}
 
 }

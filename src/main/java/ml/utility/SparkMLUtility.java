@@ -643,14 +643,14 @@ public class SparkMLUtility {
 		dataset = dataset.withColumnRenamed(targetCol, "label");
 		return dataset;
 	}
-	
+
 	private static void toDouble(List<String> textFeatures, Dataset<Row> dataset) {
 		session.udf().register("toDouble", new UDF1<Integer, Double>() {
 			public Double call(Integer t1) throws Exception {
 				return new Double(t1);
 			}
 		}, DataTypes.DoubleType);
-		
+
 		String fucnStr = "", sqlStr = "";
 		for (String feature : textFeatures) {
 			fucnStr += createSqlStr("toDouble", feature, "DB");
@@ -661,7 +661,7 @@ public class SparkMLUtility {
 		dataset = session.sql(sqlStr);
 		dataset.show();
 	}
-	
+
 	private static String createSqlStr(String func, String feature, String indicator) {
 		return ", " + func + "(" + feature + ") as " + feature + "_" + indicator;
 	}
@@ -673,24 +673,28 @@ public class SparkMLUtility {
 		String path = "D:\\Vishal\\DataSets\\Data\\train.csv";
 		Dataset<Row> dataset2 = session.read().option("header", "true").option("inferSchema", "true").csv(path);
 		dataset2 = removeStringColumns(dataset2);
-//		dataset2.show();
-		VectorAssembler assembler = new VectorAssembler()
-			      .setInputCols(new String[]{"PassengerId", "Survived"})
-			      .setOutputCol("features");
+		// dataset2.show();
+		VectorAssembler assembler = new VectorAssembler().setInputCols(new String[] { "PassengerId", "Survived" })
+				.setOutputCol("features");
 		Dataset<Row> transform = assembler.transform(dataset2);
 		transform = transform.withColumnRenamed("Survived", "label");
 		transform = transform.select("features", "label");
-		List< String>list = new ArrayList<String>();
+		List<String> list = new ArrayList<String>();
 		list.add("label");
 		toDouble(list, transform);
-		
+
 	}
-	
+
 	public static void toUpper(List<String> featureList) {
 		ListIterator<String> iterator = featureList.listIterator();
 		while (iterator.hasNext()) {
 			iterator.set(iterator.next().toUpperCase());
 		}
+	}
+
+	public String stopWordDict() {
+		String stopWords = "a,able,about,across,after,all,almost,also,am,among,an,and,any,are,as,at,be,because,been,but,by,can,cannot,could,dear,did,do,does,either,else,ever,every,for,from,get,got,had,has,have,he,her,hers,him,his,how,however,i,if,in,into,is,it,its,just,least,let,like,likely,may,me,might,most,must,my,neither,no,nor,not,of,off,often,on,only,or,other,our,own,rather,said,say,says,she,should,since,so,some,than,that,the,their,them,then,there,these,they,this,tis,to,too,twas,us,wants,was,we,were,what,when,where,which,while,who,whom,why,will,with,would,yet,you,your";
+		return stopWords.replaceAll(",", " | ");
 	}
 
 }
