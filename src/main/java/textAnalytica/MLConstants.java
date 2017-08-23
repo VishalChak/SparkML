@@ -73,6 +73,8 @@ public class MLConstants {
 	public static final String STRIPWHITESPACE = "stripWhiteSpace";
 	public static final String STRIPWHITESPACE_IND = "_SWS";
 	public static final String WHITESPACE = "\\s+";
+	
+	public static final String TEXTCLEANSEING = "textCleansing";
 
 	public static final String WATSONURL = "https://gateway.watsonplatform.net/language-translator/api/v2/";
 	public static final String WATSONUSER = "c34588ba-7bb6-463a-9626-464d223a1ff8";
