@@ -13,23 +13,24 @@ import edu.stanford.nlp.util.CoreMap;
 
 public class example {
 	public static void main(String[] args) {
+		System.out.println(getLemma("forcing lower case must be done outside the Stemmer class."));
+	}
+	
+	private static String getLemma(String text) {
+
 		Properties props = new Properties();
 		props.put("annotators", "tokenize, ssplit, pos, lemma");
 		StanfordCoreNLP stanfordCoreNLP = new StanfordCoreNLP(props, false);
-		String text = "forcing lower case must be done outside the Stemmer class." /*
-																					 * the
-																					 * string
-																					 * you
-																					 * want
-																					 */;
 		Annotation document = stanfordCoreNLP.process(text);
-
+		String res = "";
 		for (CoreMap sentence : document.get(SentencesAnnotation.class)) {
 			for (CoreLabel token : sentence.get(TokensAnnotation.class)) {
 				String word = token.get(TextAnnotation.class);
 				String lemma = token.get(LemmaAnnotation.class);
-				System.out.println("lemmatized version :" + lemma);
+				res+= lemma+" ";
 			}
 		}
+		return res.trim();
 	}
+	
 }
